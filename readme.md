@@ -1,0 +1,1 @@
+My personal Bash configuration. Lots of stuff in here you probably don't need/want, and even more that needs personalization for your system. Some fun stuff, though, feel free to pick apart and try it out.
