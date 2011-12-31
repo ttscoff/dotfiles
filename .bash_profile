@@ -61,6 +61,9 @@ source ~/scripts/bashmarks.sh
 SUDO_COMPLETE=( $(echo $PATH | sed 'y/:/\n/' | xargs ls -1 2>/dev/null) )
 complete -o default -W "${SUDO_COMPLETE[*]}" sudo
 
+SSH_COMPLETE=( $(perl -ne 'print "$1 " if /^Host (.+)$/' ~/.ssh/config) )
+complete -o default -W "${SSH_COMPLETE[*]}" ssh
+
 # See ~/.app_completions
 
 export CLICOLOR=1
