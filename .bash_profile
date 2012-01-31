@@ -1,7 +1,7 @@
 # export PATH="/Developer/usr/lib:/Developer/usr/bin:/Developer/usr/sbin/:/usr/local/bin:/usr/local/sbin:/usr/local/lib:/usr/local/mysql/bin:/Users/ttscoff/bin:/Users/ttscoff/.gem/ruby/1.8/bin:/Users/ttscoff/scripts:$PATH"
 export PATH="/usr/local/share/python:/usr/local/bin:/usr/local/sbin:/usr/local/lib:/usr/local/mysql/bin:/Users/ttscoff/bin:/Users/ttscoff/scripts:/Users/ttscoff/.cabal/bin:/Users/ttscoff/.gem/ruby/1.8/bin:/usr/texbin:/Users/ttscoff/Library/Application Support/MultiMarkdown/bin:$PATH"
 export PYTHONPATH="/Library/Python/2.7/site-packages:/System/Library/Frameworks/Python.framework/Versions/2.7/lib:/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python:/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload:/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload"
-test -r /sw/bin/init.sh && . /sw/bin/init.sh
+
 [[ -z $DISPLAY ]] && export DISPLAY=":0.0"
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && . "$HOME/.rvm/scripts/rvm" # This loads RVM into a shell session.
 
@@ -51,7 +51,9 @@ PROMPT_COMMAND=prompt_command
 if [ -f /etc/bash_completion ]; then
    . /etc/bash_completion
 fi
-source /usr/local/Library/Contributions/brew_bash_completion.sh
+if [ -f `brew --prefix`/etc/bash_completion ]; then
+  . `brew --prefix`/etc/bash_completion
+fi
 source ~/.git-completion.bash
 source ~/.git-flow-completion.bash
 source ~/.app_completions
@@ -123,7 +125,7 @@ alias ll="ls -l"
 alias lt='echo "------Newest--" && ls -At1 && echo "------Oldest--"'
 alias ltr='echo "------Oldest--" && ls -Art1 && echo "------Newest--"'
 alias macirb="/usr/local/bin/macirb --simple-prompt"
-alias mark="open -a /Applications/Marked.app"
+# alias mark="open -a /Applications/Marked.app"
 # alias mate="open -b com.macromates.textmate"
 alias mem='top -o rsize' # memory
 alias mkdir='mkdir -p -v'
@@ -158,6 +160,9 @@ source ~/scripts/z.sh
 # alias e='f -e mate' # quick opening files with vim
 # alias z='d -e cd' # quick cd into directories, mimicking autojump and z
 # alias of='a -e open' # quick opening files with xdg-open
+
+# set vi-compatible mode for the command line
+# set -o vi
 
 function console () {
   if [[ $# > 0 ]]; then
@@ -332,9 +337,9 @@ pwdtail () { #returns the last 2 fields of the working directory
   #for((i=1;i<=$LINES;i++));do echo;done
 #}
 
-# gets the current 1m avg CPU load, was part of my prompt, 
+# gets the current 1m avg CPU load, was part of my prompt,
 # but was too slow for prompt_command
-chkload () { 
+chkload () {
   local CURRLOAD=`uptime|awk '{print $(NF-2)}'`
   if [ "$CURRLOAD" > "1" ]; then
     local OUTP="HIGH"
@@ -386,6 +391,29 @@ function ca(){
   before=$(cat "$note")
   echo "$(date '+%y-%m-%d %H:%M | ') (${path##*/}) $msg" > "$note"
   echo "$before" >> "$note"
+  git commit -am "$msg"
+}
+
+# encode a given image file as base64 and output css background property to clipboard
+function 64enc() {
+  openssl base64 -in $1 | awk -v ext="${1#*.}" '{ str1=str1 $0 }END{ print "background:url(data:image/"ext";base64,"str1");" }'|pbcopy
+  echo "$1 encoded to clipboard"
+}
+
+# experimental wrapper for git to log commits to Day One
+# lots of credit to http://nnutter.com/2012/01/git-todo/
+function cdo(){
+  msg=$*
+  GIT_DIR=$(git rev-parse --git-dir)
+  if ! (( $? )); then
+      GIT_DIR=$(echo "$GIT_DIR" | awk -F/ '{nlast = NF -1;print $nlast}')
+      if [ -z "$GIT_DIR" ]; then
+        path=$(pwd)
+        GIT_DIR=${path##*/}
+      fi
+      ~/scripts/logtodayone.rb "@$GIT_DIR $msg"
+  fi
+
   git commit -am "$msg"
 }
 
@@ -613,6 +641,25 @@ rumount() {
     [[ $(ls ~/mounts/$1) ]] || rm -rf ~/mounts/$1
   fi
 }
+
+# Ruby cgi escape
+esc() {
+  ruby -e 'require "cgi"; puts CGI.escape(ARGV.join(" "))' $@
+}
+
+## From http://www.dotfiles.org/~foca/.bash_functions
+#
+# tag a directory in a command to come to it later
+tag() {
+  alias $1="cd $PWD"
+}
+
+# alias last command
+a() {
+  x=`history 1 | sed 's/.\{7\}//'`;
+  alias ${1}="${x}";
+}
+## End ~foca
 
 # a couple of my bigger scripts separated out
 [[ -s "/Users/ttscoff/scripts/na.sh" ]] && source "/Users/ttscoff/scripts/na.sh"
